@@ -4,42 +4,42 @@ using UnityEngine;
 
 public class AudioManager : MonoBehaviour
 {
-    public AudioSource positionatingPlayersMusic;
-    public AudioSource inGameMusic;
-    public AudioSource lastCitizenMusic;
-    public AudioSource pickUp;
+    public static AudioManager _instance { get; private set; }
+    [SerializeField] private AudioClip positionning;
+    [SerializeField] private AudioClip inGameMusic;
+    [SerializeField] private AudioClip lastCitizenMusic;
+    [SerializeField] private AudioSource pickUp;
+    private AudioSource audioSource;
 
-    bool checkGameMusic = false;
-    bool lastMusicPlaying = false;
-
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
-        positionatingPlayersMusic.Play();
+        _instance = this;
+        audioSource = GetComponent<AudioSource>();
     }
 
-    // Update is called once per frame
-    void Update()
+
+    public void SetPositioningMusicClip()
     {
-        if (Player._instance.SFX_PickUp)
-        {
-            pickUp.Play();
-            Player._instance.SFX_PickUp = false;
-        }
-
-        if (Player._instance.inGameMusicPlaying && !checkGameMusic)
-        {
-            checkGameMusic = true;
-            positionatingPlayersMusic.Stop();
-            inGameMusic.Play();
-        }
-
-        if (Player._instance.win_counter == 2 && !lastMusicPlaying)
-        {
-            lastMusicPlaying = true;
-            inGameMusic.Stop();
-            lastCitizenMusic.Play();
-            Debug.Log("Play intense music here");
-        }
+        audioSource.clip = positionning;
+        audioSource.Play();
     }
+
+    public void SetInGameMusicClip()
+    {
+        audioSource.clip = inGameMusic;
+        audioSource.Play();
+    }
+
+    public void SetlastCitizenMusicClip()
+    {
+        audioSource.clip = lastCitizenMusic;
+        audioSource.Play();
+    }
+
+    public void SetPickupMusicClip()
+    {
+        pickUp.Play();
+    }
+
+  
 }

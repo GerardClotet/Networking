@@ -4,33 +4,22 @@ using UnityEngine;
 
 public class CitizenMaterial : MonoBehaviour
 {
-    public Material[] materialList;
-    Renderer rend;
+    [SerializeField] private Material[] materialList;
+    private Renderer rend;
 
-    public Player player;
-
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
         rend = GetComponent<Renderer>();
         rend.enabled = true;
-        //llamar función aquí que asigne el render con el nombre del material
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 
     public void AssignMaterial(int material_n)
     {
-        foreach(var Item in materialList)
+        for(int i =0; i < materialList.Length; i++)
         {
-            if (Item.name == player.player_cards.playableCitizenList.citizens[material_n].citizen)
+            if(i == material_n)
             {
-                rend.sharedMaterial = Item;
-                Debug.Log(Item.name);
+                rend.sharedMaterial = materialList[i];
             }
         }
     }
