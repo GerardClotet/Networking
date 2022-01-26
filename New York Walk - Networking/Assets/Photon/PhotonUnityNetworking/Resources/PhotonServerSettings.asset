@@ -42,6 +42,7 @@ MonoBehaviour:
   - RPC_SelectedTokenMove
   - RPC_LastTokenSetted
   - RPC_TokenUpdate
+  - RPC_RecieveTokenInfo
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

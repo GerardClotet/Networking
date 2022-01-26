@@ -15,7 +15,7 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
     private const string STARTING_TURN = "turn";
     private const int MAX_PLAYERS = 2;
-
+    private const string GAME_STATE = "gameState";
     private void Awake()
     {
         PhotonNetwork.AutomaticallySyncScene = true;
@@ -27,7 +27,7 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     }
     private void Start()
     {
-      //  Debug.developerConsoleVisible = true;
+      Debug.developerConsoleVisible = true;
     }
 
     public void SetController(MultiplayerGameController controller)
@@ -59,6 +59,7 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         RoomOptions roomOptions = new RoomOptions();
         roomOptions.MaxPlayers = MAX_PLAYERS;
         PhotonNetwork.CreateRoom(null, roomOptions);
+    
     }
 
     public override void OnJoinedRoom()
@@ -66,11 +67,31 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         uiManager.Connected();
         Debug.Log($"Player {PhotonNetwork.LocalPlayer.ActorNumber} joined the room");
 
-        if (!IsRoomFull())
+        if(PhotonNetwork.IsMasterClient)
         {
-            gameInitializer.CreateMultiplayerBoard();
+            if (!IsRoomFull())
+            {
+                if (PhotonNetwork.CurrentRoom != null)
+                    PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { { GAME_STATE, gameInitializer.GetController().GetGameState() } });
+                gameInitializer.CreateMultiplayerBoard();
+            }
         }
-        else SetTurn();
+        else
+        {
+            //check game state
+            switch((GameState)PhotonNetwork.CurrentRoom.CustomProperties[GAME_STATE])
+            {
+                case GameState.Init: //Default
+                    SetTurn();
+                    break;
+                case GameState.Game:
+                    //Do function
+                    break;
+                case GameState.Finish:
+                    //Do function
+                    break;
+            }
+        }
     }
 
     public bool IsRoomFull()
@@ -89,24 +110,24 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
         if (PhotonNetwork.LocalPlayer == targetPlayer)
         {
-            uiManager.SetTurnType((bool)PhotonNetwork.LocalPlayer.CustomProperties[STARTING_TURN]); 
-            if(controller == null)
+            uiManager.SetTurnType((bool)PhotonNetwork.LocalPlayer.CustomProperties[STARTING_TURN]);
+
+            if (controller == null)
                 gameInitializer.InitializeMultiplayerGameController();
 
             controller.SetGameState(GameState.Game);
+
             if ((bool)targetPlayer.CustomProperties[STARTING_TURN])
             {
-                Debug.Log($"Entered here as player {targetPlayer.ActorNumber}");
                 GetRandomCards getRandomCards = new GetRandomCards();
                 controller.SetRandomCards(getRandomCards.GenerateRandom());
                 controller.SetTurnState(GameTurn.MyTurnSetUp);
                 controller.SetTeam();
-                //here we must set our game state
             }
         }
     }
 
-    private void SetTurn() //here we decide whos turn first
+    private void SetTurn() 
     {
         int tmp = Random.Range(1, 3);
         foreach(Player p in PhotonNetwork.PlayerList)
@@ -139,4 +160,16 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         }
     }
     #endregion
+
+    public void SetGameStateToRoomProperty(GameState state)
+    {
+        if(PhotonNetwork.CurrentRoom != null)
+        {
+            PhotonNetwork.CurrentRoom.CustomProperties[GAME_STATE] = state;
+        }
+        else
+        {
+            Debug.LogError("Room is null, you aren't connected");
+        }
+    }
 }

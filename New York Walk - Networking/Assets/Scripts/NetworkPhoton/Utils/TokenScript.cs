@@ -29,11 +29,13 @@ public class TokenScript : MonoBehaviour
     private GameObject destinationGO;
     private GameObject pickUpGO;
 
+    //private GameObject arm;
     private void Awake()
     {
         photonView = GetComponent<PhotonView>();
         tokenAnimation = GetComponent<TokenAnimationMovement>();
         destinationPrefab = Resources.Load(destinyPrefabPath) as GameObject;
+        //arm = FindObjectOfType<MoveArm>().gameObject;
     }
 
     public void SetMaterial(int materialCounter)
@@ -49,7 +51,7 @@ public class TokenScript : MonoBehaviour
     {
         this.id = id;
         this.boardArrayPos = boardArrayPos;
-        LastTokenSetted(materialCounter);
+        SendTokenInfo(materialCounter);
     }
 
     public int GetID()
@@ -67,13 +69,13 @@ public class TokenScript : MonoBehaviour
         tokenAnimation.SetIdleAnimation(false);
     }
 
-    public void LastTokenSetted(int materialCounter) 
+    public void SendTokenInfo(int materialCounter) 
     {
-        photonView.RPC(nameof(RPC_LastTokenSetted),RpcTarget.AllBuffered, new object[] { id,boardArrayPos,UserManager._instance.GetTeam(),materialCounter});
+        photonView.RPC(nameof(RPC_RecieveTokenInfo),RpcTarget.AllBuffered, new object[] { id,boardArrayPos,UserManager._instance.GetTeam(),materialCounter});
     }
 
     [PunRPC]
-    private void RPC_LastTokenSetted(int id,int boardArrayPos,bool team,int materialCounter)
+    private void RPC_RecieveTokenInfo(int id,int boardArrayPos,bool team,int materialCounter)
     {
         UserManager._instance.UpdateBoardArray(id, boardArrayPos);
         if(team)
@@ -99,6 +101,8 @@ public class TokenScript : MonoBehaviour
     {
         tokenAnimation.SetDestPos(newPos);
         TokenUpdate();
+
+        //ArmMoveMe();
 
         if (tokenState == TokenState.BaseState)
             CheckPickUp();
@@ -192,6 +196,11 @@ public class TokenScript : MonoBehaviour
         return tokenState;
     }
 
+    //public void ArmMoveMe()
+    //{
+    //    arm.GetComponent<MoveArm>().PickUpToken(boardArrayPos);
+    //}
+
     /// <summary>
     /// This function validates that the clicked board pos is adjacent to the current token, not diagonals though
     /// </summary>
@@ -243,4 +252,12 @@ public class TokenScript : MonoBehaviour
         if (destinationGO != null)
             Destroy(destinationGO);
     }
+
+    public int GetBoardPos() => boardArrayPos;
+
+    /// <summary>
+    ///If returns true player has pickedUpObj
+    /// </summary>
+    /// <returns></returns>
+    public bool GetPickUp() => pickUpGO == null;
 }

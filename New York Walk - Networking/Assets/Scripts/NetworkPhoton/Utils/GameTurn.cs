@@ -1,4 +1,4 @@
-public enum GameTurn //will add more states
+public enum GameTurn 
 {
     MyTurn,OtherTurn, MyTurnSetUp
 }

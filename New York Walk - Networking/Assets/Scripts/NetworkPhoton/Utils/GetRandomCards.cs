@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 public class GetRandomCards 
 {
-    private const int MAX_CARDS_TO_SHARE = 6;
+    private const int MAX_CARDS_TO_SHARE = 8;
     private const int DECK_COUNT = 24;
 
     public List<int> GenerateRandom()

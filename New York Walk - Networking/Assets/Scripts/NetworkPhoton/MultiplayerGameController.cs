@@ -14,18 +14,21 @@ public class MultiplayerGameController : MonoBehaviour, IOnEventCallback
     private const byte GIVE_CARDS = 2;
     private const byte GAME_STATE = 4;
     private const byte RESET_GAME = 3;
+    private const byte DELETINGPLAYER = 5;//wip
     private UserManager userManager;
 
     private UIManager uiManager;
     private MultiplayerBoard board;
     private bool restartGame = false;
+    private const string crossPath = "Cross";
+    [SerializeField] private CrossBehaviour crossPrefab;
     private void Awake()
     {
-       // userManager = ScriptableObject.CreateInstance(typeof(UserManager)) as UserManager;
         turnState = GameTurn.OtherTurn;
         gameState = GameState.Init;
         userManager = GetComponent<UserManager>();
         userManager.SetController(this);
+       // crossPrefab = Resources.Load<GameObject>(crossPath);
     }
 
     public bool CanPerformMove()
@@ -66,6 +69,7 @@ public class MultiplayerGameController : MonoBehaviour, IOnEventCallback
     public void EndGame()
     {
         gameState = GameState.Finish;
+        NetworkManager._instance.SetGameStateToRoomProperty(gameState);
         turnState = GameTurn.OtherTurn;
         uiManager.WonGame();
         FinishGame();
@@ -120,7 +124,14 @@ public class MultiplayerGameController : MonoBehaviour, IOnEventCallback
     {
         turnState = GameTurn.OtherTurn;
         gameState = GameState.Init;
+        NetworkManager._instance.SetGameStateToRoomProperty(gameState);
         userManager.ResetAll();
+        CrossBehaviour[] crossBh = FindObjectsOfType<CrossBehaviour>();
+        for(int i = 0; i < crossBh.Length; i++)
+        {
+            PhotonNetwork.Destroy(crossBh[i].GetComponent<PhotonView>());
+        }
+
         if (!restartGame)
         {
             RaiseEventOptions raiseEventOptions = new RaiseEventOptions { Receivers = ReceiverGroup.Others }; //recieverGroup Maybe just other?
@@ -180,19 +191,27 @@ public class MultiplayerGameController : MonoBehaviour, IOnEventCallback
         PhotonNetwork.RaiseEvent(SET_TURN_STATE_EVENT_CODE, content, raiseEventOptions, SendOptions.SendReliable);
     }
 
-
+    private void CrossesBlock(int[] positions)
+    {
+        Debug.LogError($"Croos instantiated");
+        PhotonNetwork.Instantiate(crossPrefab.name, userManager.GetBoardSquaresPos(positions[0]), Quaternion.Euler(-90, 0, 0));
+        userManager.ModifyBoardValue(positions[0],-3);
+        PhotonNetwork.Instantiate(crossPrefab.name, userManager.GetBoardSquaresPos(positions[1]), Quaternion.Euler(-90, 0, 0));
+        userManager.ModifyBoardValue(positions[1], -3);
+    }
     public void SetRandomCards(List<int>randomCards)
     {
         //we kept the first half and give the other player the other half
         userManager.SetCards(randomCards.GetRange(0, 3));
-        GiveCards(randomCards.GetRange(3, 3));
+        GiveCards(randomCards.GetRange(3, 5));
+        //create crosses
+        CrossesBlock(randomCards.GetRange(6, 2).ToArray());
         userManager.SetUpToken();
     }
 
     private void GiveCards(List<int> randomcards)
     {
-
-        object[] content = new object[] { randomcards[0],randomcards[1],randomcards[2] }; //token id, token pos
+        object[] content = new object[] { randomcards[0],randomcards[1],randomcards[2],randomcards[3],randomcards[4] }; //token id, token pos
         RaiseEventOptions raiseEventOptions = new RaiseEventOptions { Receivers = ReceiverGroup.Others }; //recieverGroup Maybe just other?
         PhotonNetwork.RaiseEvent(GIVE_CARDS, content, raiseEventOptions, SendOptions.SendReliable);
     }
@@ -209,7 +228,8 @@ public class MultiplayerGameController : MonoBehaviour, IOnEventCallback
             dataRecieved.Add((int)data[1]);
             dataRecieved.Add((int)data[2]);
             userManager.SetCards(dataRecieved);
-
+            userManager.ModifyBoardValue((int)data[3], -3);
+            userManager.ModifyBoardValue((int)data[4], -3);
         }
     }
 
@@ -217,6 +237,8 @@ public class MultiplayerGameController : MonoBehaviour, IOnEventCallback
     {
         gameState = state;
     }
+
+    public GameState GetGameState() => gameState;
     
     public void PassTurn()
     {
@@ -226,5 +248,38 @@ public class MultiplayerGameController : MonoBehaviour, IOnEventCallback
             EndTurn();
         }
     }
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if(NetworkManager._instance.IsRoomFull())
+            {
+                SendAllDataForReconnection();
+            }
+                Application.Quit();
+        }
+    }
 
+    //WIP
+    public void SendAllDataForReconnection()
+    {
+        //case scenario player reconnects while in game
+        List<object> objs = new List<object>();
+        int[] cards = userManager.GetCards();
+        objs.Add(cards[0]);
+        objs.Add(cards[1]);
+        objs.Add(cards[2]);
+        objs.Add(userManager.GetTokenCounter());
+        objs.Add(userManager.GetWinCounter());
+        //tokens info
+        List<GameObject> tokenList = userManager.GetTokenList();
+        for(int i = 0; i < tokenList.Count; i++)
+        {
+            objs.Add(tokenList[i].GetComponent<TokenScript>().GetID());
+            objs.Add(tokenList[i].GetComponent<TokenScript>().GetBoardPos());
+            objs.Add(tokenList[i].GetComponent<TokenScript>().GetPickUp());
+        }
+        RaiseEventOptions raiseEventOptions = new RaiseEventOptions { Receivers = ReceiverGroup.Others }; //recieverGroup Maybe just other?
+        PhotonNetwork.RaiseEvent(GIVE_CARDS, objs.ToArray(), raiseEventOptions, SendOptions.SendReliable);
+    }
 }

@@ -5,9 +5,9 @@ using UnityEngine;
 
 public class GameInitializer : MonoBehaviour
 {
-    // Start is called before the first frame update
     [Header("Dependant Objects")]
     [SerializeField] private MultiplayerBoard multiplayerBoardPrefab;
+    //[SerializeField] private MoveArm arm;
     private MultiplayerGameController controller;
 
     [Header("Scene references")]
@@ -23,7 +23,8 @@ public class GameInitializer : MonoBehaviour
     {
         if(!networkManager.IsRoomFull()) //only the first playe instantiates the board
         {
-            PhotonNetwork.Instantiate(multiplayerBoardPrefab.name, BoardAnchor.position, BoardAnchor.rotation);
+            PhotonNetwork.InstantiateRoomObject(multiplayerBoardPrefab.name, BoardAnchor.position, BoardAnchor.rotation);
+            //PhotonNetwork.Instantiate(arm.name, BoardAnchor.position, BoardAnchor.rotation);
         }
     }
 
@@ -33,6 +34,11 @@ public class GameInitializer : MonoBehaviour
         MultiplayerBoard mBoard = FindObjectOfType<MultiplayerBoard>();//try not to use findobject
         controller.SetDependencies(UIManager, mBoard);
         networkManager.SetController(controller);
+        
     }
 
+    public MultiplayerGameController GetController()
+    {
+        return controller;
+    }
 }

@@ -14,7 +14,6 @@ public class UserManager : MonoBehaviour
     [SerializeField] private List<GameObject> cardAnchors;
     [SerializeField] private GameObject cardGameObjectPrefab;
     private int tokenCounter = 0;
-    // Start is called before the first frame update
     private MultiplayerGameController controller;
 
     private List<GameObject> boardSquares = new List<GameObject>();
@@ -53,7 +52,6 @@ public class UserManager : MonoBehaviour
                     SetInitialTokenPos();
                     break;
                 default:
-
                     break;
             }
         }
@@ -86,7 +84,11 @@ public class UserManager : MonoBehaviour
         SetSpaceCubes._instance.DefineBoardPos(boardSquares);
     }
 
-    //maybe later pass the token list.Count()
+    public Vector3 GetBoardSquaresPos(int pos)
+    {
+        return boardSquares[pos].transform.position;
+    }
+
     public int GetTokenCounter()
     {
         return tokenCounter;
@@ -94,7 +96,6 @@ public class UserManager : MonoBehaviour
 
     public void UpdateToken()
     {
-        //how can we no the token maybe with a list
         SetCurrentToken();
         SetSpaceCubes._instance.SetAvailableCubes(Array.IndexOf(boardArray, currentToken.GetID()));
         currentToken.MyTurn();
@@ -302,5 +303,13 @@ public class UserManager : MonoBehaviour
     public int GetWinCounter()
     {
         return winCounter;
+    }
+    public List<GameObject> GetTokenList() => tokenList;
+
+    public int[] GetCards() => cards;
+
+    public void ModifyBoardValue(int boardPos, int boardValue)
+    {
+        boardArray[boardPos] = boardValue;
     }
 }
